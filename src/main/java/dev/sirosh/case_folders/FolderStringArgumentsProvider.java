@@ -1,8 +1,9 @@
 package dev.sirosh.case_folders;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.params.provider.AnnotationBasedArgumentsProvider;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.support.AnnotationConsumer;
 import org.junit.platform.commons.util.Preconditions;
 
 import java.io.IOException;
@@ -16,7 +17,8 @@ import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
 
-class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<FolderSource> {
+class FolderStringArgumentsProvider implements ArgumentsProvider, AnnotationConsumer<FolderSource> {
+    private FolderSource folderSource;
     private final PathProvider pathProvider;
 
     FolderStringArgumentsProvider() {
@@ -28,7 +30,7 @@ class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<Fol
     }
 
     @Override
-    protected Stream<? extends Arguments> provideArguments(ExtensionContext context, FolderSource folderSource) {
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         List<Path> caseFolders = getCaseFolders(context, folderSource.folder());
         return caseFolders.stream()
                 .map(caseFolder -> {
@@ -38,6 +40,11 @@ class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<Fol
                     }
                     return Arguments.of(params.toArray());
                 });
+    }
+
+    @Override
+    public void accept(FolderSource folderSource) {
+        this.folderSource = folderSource;
     }
 
     private static Stream<String> getFileParams(String[] files, Path caseFolder) {

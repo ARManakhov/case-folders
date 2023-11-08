@@ -60,7 +60,8 @@ class FolderStringArgumentsProviderTest {
         when(annotation.files()).thenReturn(files);
         when(annotation.includeName()).thenReturn(includeName);
         FolderStringArgumentsProvider provider = new FolderStringArgumentsProvider();
-        return provider.provideArguments(context, annotation)
+        provider.accept(annotation);
+        return provider.provideArguments(context)
                 .map(Arguments::get);
     }
 
