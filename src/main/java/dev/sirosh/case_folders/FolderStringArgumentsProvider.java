@@ -1,22 +1,30 @@
 package dev.sirosh.case_folders;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.params.provider.AnnotationBasedArgumentsProvider;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.support.AnnotationConsumer;
 import org.junit.platform.commons.util.Preconditions;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Parameter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
+import static org.junit.jupiter.api.Named.named;
 
-class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<FolderSource> {
+class FolderStringArgumentsProvider implements ArgumentsProvider, AnnotationConsumer<FolderSource> {
+    private FolderSource folderSource;
     private final PathProvider pathProvider;
 
     FolderStringArgumentsProvider() {
@@ -28,16 +36,51 @@ class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<Fol
     }
 
     @Override
-    protected Stream<? extends Arguments> provideArguments(ExtensionContext context, FolderSource folderSource) {
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         List<Path> caseFolders = getCaseFolders(context, folderSource.folder());
+
         return caseFolders.stream()
                 .map(caseFolder -> {
-                    Stream<String> params = getFileParams(folderSource.files(), caseFolder);
-                    if (folderSource.includeName()) {
-                        params = Stream.concat(Stream.of(caseFolder.getFileName().toString()), params);
+                    List<Object> values = getFileParams(folderSource.files(), caseFolder)
+                            .collect(Collectors.toList());
+                    Parameter[] parameters = context.getRequiredTestMethod().getParameters();
+                    findCaseFolderParam(parameters)
+                            .ifPresent(i -> {
+                                if (parameters[i].getType().equals(Path.class)) {
+                                    values.add(i, caseFolder);
+                                    return;
+                                }
+                                if (parameters[i].getType().equals(File.class)) {
+                                    values.add(i, caseFolder.toFile());
+                                    return;
+                                }
+                                values.add(i, null);
+                            });
+                    Object[] valuesArray = values.toArray();
+                    if (!folderSource.nameFromCaseFolder()) {
+                        return Arguments.of(valuesArray);
                     }
-                    return Arguments.of(params.toArray());
+                    if (valuesArray.length == 0) {
+                        return Arguments.of(named(caseFolder.getFileName().toString(), null));
+                    }
+                    valuesArray[0] = named(caseFolder.getFileName().toString(), valuesArray[0]);
+                    return Arguments.of(valuesArray);
                 });
+    }
+
+    private static Optional<Integer> findCaseFolderParam(Parameter[] parameters) {
+        for (int i = 0; i < parameters.length; i++) {
+            if (nonNull(parameters[i].getAnnotation(CaseFolder.class))) {
+                return Optional.of(i);
+            }
+        }
+        return Optional.empty();
+    }
+
+
+    @Override
+    public void accept(FolderSource folderSource) {
+        this.folderSource = folderSource;
     }
 
     private static Stream<String> getFileParams(String[] files, Path caseFolder) {
@@ -56,7 +99,7 @@ class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<Fol
     private Path getRootFolder(ExtensionContext context, String folder) {
         Source source = pathProvider.classpathResource(folder);
         Path rootFolder = source.get(context);
-        Preconditions.condition(Files.isDirectory(rootFolder), "Classpath resource [" + folder + "] must be folder");
+        Preconditions.condition(Files.isDirectory(rootFolder), "Classpath resource [%s] must be folder".formatted(folder));
         return rootFolder;
     }
 
@@ -90,9 +133,9 @@ class FolderStringArgumentsProvider extends AnnotationBasedArgumentsProvider<Fol
 
         @Override
         public Path getClasspathResource(Class<?> baseClass, String path) {
-            Preconditions.notBlank(path, () -> "Classpath resource [" + path + "] must not be null or blank");
+            Preconditions.notBlank(path, () -> "Classpath resource [%s] must not be null or blank".formatted(path));
             URL resource = baseClass.getResource(path);
-            Preconditions.notNull(resource, "Classpath resource [" + path + "] doesn't exists");
+            Preconditions.notNull(resource, "Classpath resource [%s] doesn't exists".formatted(path));
             try {
                 return Path.of(resource.toURI());
             } catch (URISyntaxException e) {
