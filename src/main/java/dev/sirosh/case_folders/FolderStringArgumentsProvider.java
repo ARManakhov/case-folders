@@ -99,14 +99,14 @@ class FolderStringArgumentsProvider implements ArgumentsProvider, AnnotationCons
     private Path getRootFolder(ExtensionContext context, String folder) {
         Source source = pathProvider.classpathResource(folder);
         Path rootFolder = source.get(context);
-        Preconditions.condition(Files.isDirectory(rootFolder), "Classpath resource [%s] must be folder".formatted(folder));
+        Preconditions.condition(Files.isDirectory(rootFolder), "Classpath resource [" + folder + "] must be folder");
         return rootFolder;
     }
 
     private List<Path> getCaseFolders(ExtensionContext context, String folder) {
         Path rootFolder = getRootFolder(context, folder);
         try (Stream<Path> caseFoldersStream = Files.list(rootFolder).filter(Files::isDirectory)) {
-            return caseFoldersStream.toList();
+            return caseFoldersStream.collect(Collectors.toList());
         } catch (IOException e) {
             throw new IllegalArgumentException("I/O error in case folders listing", e);
         }
@@ -133,9 +133,9 @@ class FolderStringArgumentsProvider implements ArgumentsProvider, AnnotationCons
 
         @Override
         public Path getClasspathResource(Class<?> baseClass, String path) {
-            Preconditions.notBlank(path, () -> "Classpath resource [%s] must not be null or blank".formatted(path));
+            Preconditions.notBlank(path, () -> "Classpath resource [" + path + "] must not be null or blank");
             URL resource = baseClass.getResource(path);
-            Preconditions.notNull(resource, "Classpath resource [%s] doesn't exists".formatted(path));
+            Preconditions.notNull(resource, "Classpath resource [" + path + "] doesn't exists");
             try {
                 return Path.of(resource.toURI());
             } catch (URISyntaxException e) {
