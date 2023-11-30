@@ -6,7 +6,7 @@
 
     <groupId>dev.sirosh</groupId>
     <artifactId>case_folders</artifactId>
-    <version>0.0.16</version>
+    <version>0.0.1</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
