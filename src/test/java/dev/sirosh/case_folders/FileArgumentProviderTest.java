@@ -47,14 +47,11 @@ class FileArgumentProviderTest {
     Path catPath = Path.of(TestClass.class.getResource("/test_cat_and_dog/meme/cat").toURI());
     return Stream.of(
         Arguments.of(named("Path argument", TestClass.class.getMethod("testCat", Path.class)), catPath),
-        Arguments.of(named("broken test for demo argument", TestClass.class.getMethod("broken", Path.class)), catPath),
         Arguments.of(named("File argument", TestClass.class.getMethod("testCat", File.class)), catPath.toFile()));
   }
 
   private abstract static class TestClass {
     public abstract void testCat(@FileArgument(file = "/test_cat_and_dog/meme/cat") Path cat);
-
-    public abstract void broken(@FileArgument(file = "/test_cat_and_dog/mine/cat") Path cat);
 
     public abstract void testCat(@FileArgument(file = "/test_cat_and_dog/meme/cat") File cat);
   }
