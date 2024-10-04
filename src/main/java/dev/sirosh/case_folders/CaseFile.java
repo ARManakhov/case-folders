@@ -7,6 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 
 @Target({ ElementType.FIELD, ElementType.PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface FileArgument {
+public @interface CaseFile {
   String file();
+
+  boolean absolute() default false;
 }

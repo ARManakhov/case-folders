@@ -11,11 +11,9 @@ import java.lang.annotation.Target;
 @Documented
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@ArgumentsSource(FolderStringArgumentsProvider.class)
-public @interface FolderSource {
-    String folder();
+@ArgumentsSource(CaseFolderSourceArgumentsProvider.class)
+public @interface CaseFolderSource {
+  String folder();
 
-    String[] files() default {};
-
-    boolean nameFromCaseFolder() default true;
+  boolean nameFromCaseFolder() default true;
 }
